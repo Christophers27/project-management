@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String          @id @default(cuid())
+  name          String?         
+  email         String          @unique
+  emailVerified DateTime?
+  image         String?
+  username      String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Auth.js Relations
+  accounts      Account[]
+  sessions      Session[]
+  Authenticator Authenticator[]
+  
+  // Project Management Relations
+  workspaces    Workspace[]
+  createdTasks  Task[]          @relation("TaskCreator")
+  assignedTasks Task[]          @relation("TaskAssignee")
+  comments      Comment[]
+  activities    TaskActivity[]
+  notifications Notification[]
+  attachments   Attachment[]
+}
+
+model Workspace {
+  id      String   @id @default(cuid())
+  name    String
+
+  users   User[]
+  boards  Board[]
+  sprints Sprint[]
+  tags    Tag[]
+}
+
+model Board {
+  id          String    @id @default(cuid())
+  name        String
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  tasks       Task[]
+}
+
+model Sprint {
+  id          String    @id @default(cuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  tasks       Task[]
+}
+
+model Task {
+  id            String         @id @default(cuid())
+  title         String
+  description   String?
+  status        String         @default("TODO")
+  points        Float
+  dueDate       DateTime?
+
+  boardId       String
+  board         Board          @relation(fields: [boardId], references: [id])
+  sprints       Sprint[]
+
+  creatorId     String
+  creator       User           @relation("TaskCreator", fields: [creatorId], references: [id])
+  assigneeId    String?
+  assignee      User?          @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  parentId      String?
+  parent        Task?          @relation("Subtasks", fields: [parentId], references: [id])
+  subtasks      Task[]         @relation("Subtasks")
+
+  tags          Tag[]
+  comments      Comment[]
+  attachments   Attachment[]
+  activities    TaskActivity[]
+  notifications Notification[]
+}
+
+model Tag {
+  id          String    @id @default(cuid())
+  name        String
+  color       String
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  tasks       Task[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  fileName  String
+  fileUrl   String
+  createdAt DateTime @default(now())
+
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+}
+
+model TaskActivity {
+  id        String   @id @default(cuid())
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId    String 
+  user      User     @relation(fields: [userId], references: [id])
+  taskId    String? 
+  task      Task?    @relation(fields: [taskId], references: [id])
+  
+}
+
+// --- Auth.js ---
+
+model Account {
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+ 
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+ 
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@id([identifier, token])
+}
+
+model Authenticator {
+  credentialID         String  @unique
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+ 
+  userId               String
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([userId, credentialID])
+}
