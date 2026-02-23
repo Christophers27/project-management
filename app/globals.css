@@ -1,1 +1,50 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  * {
+    @apply transition-colors duration-300 ease-in-out;
+  }
+
+  :root {
+    --bg-background: #fafafa;
+    --bg-surface: #ffffff;
+    --text-foreground: #111111;
+    --text-muted: #666666;
+  }
+
+  .dark {
+    --bg-background: #0a0a0a;
+    --bg-surface: #171717;
+    --text-foreground: #ededed;
+    --text-muted: #a3a3a3;
+  }
+}
+
+@theme {
+  --color-background: var(--bg-background);
+  --color-surface: var(--bg-surface);
+  --color-foreground: var(--text-foreground);
+  --color-muted: var(--text-muted);
+  --color-accent: #f97316;
+}
+
+@layer utilities {
+  .grid-pattern {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  }
+
+  .dark .grid-pattern {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+}
+
+body {
+  @apply bg-background text-foreground;
+}
